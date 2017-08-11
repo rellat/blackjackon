@@ -1,0 +1,28 @@
+{
+    "name": "blackjackon",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "start": "node ./bin/www",
+        "debug": "DEBUG=blackjackon:* nodemon ./bin/www",
+        "build": "browserify game_client/index.js -s BlackJackOn -o public/javascripts/bjo.js",
+        "watch": "watchify game_client/index.js -s BlackJackOn -o public/javascripts/bjo.js"
+    },
+    "dependencies": {
+        "bcrypt-nodejs": "0.0.3",
+        "body-parser": "~1.17.1",
+        "cookie-parser": "~1.4.3",
+        "debug": "~2.6.3",
+        "express": "~4.15.2",
+        "express-session": "^1.15.3",
+        "hjs": "~0.0.6",
+        "mongoose": "^4.10.5",
+        "morgan": "~1.8.1",
+        "passport": "^0.3.2",
+        "passport-local": "^1.0.0",
+        "passport-local-mongoose": "^4.0.0",
+        "serve-favicon": "~2.4.2",
+        "socket.io": "^2.0.3",
+        "socket.io-client": "^2.0.3"
+    }
+}
