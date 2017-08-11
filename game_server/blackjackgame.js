@@ -5,7 +5,50 @@ var inherits = require('inherits')
 var Util = {
     SUITS: { HEART: 0, DIAMOND: 1, SPADE: 2, CLUB: 3 },
     SHAPES: ['♥', '♦', '♠', '♣'],
-    RANKS: ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
+    RANKS: ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'],
+    ACTIONS: {
+        HIT: 'Hit',
+        BUST: 'Bust',
+        STAND: 'Stand',
+        SPLIT: 'Split',
+        DOUBLE: 'Double',
+        SURRENDER: 'Surrender'
+    },
+    /**
+     * Calculates the score total of a blackjack hand.
+     * An ace is treated as 11 until the score is above 
+     * 21 then it is used as a 1 instead. Returns an
+     * integer value of the score of the hand.
+     *
+     * @param {Array} cards
+     * @return {Integer} sum
+     */
+    score: function(cards) {
+        var sum = 0
+
+        // A flag to determine whether the hand has an ace
+        var ace
+
+        for (var i = 0, value; i < cards.length; i += 1) {
+            if (cards[i].rank === 'J' || cards[i].rank === 'Q' || cards[i].rank === 'K') {
+                value = 10
+            } else if (cards[i].rank === 'A') {
+                value = 1
+                ace = true
+            } else {
+                value = parseInt(cards[i].rank, 10)
+            }
+
+            sum += value
+        }
+
+        // Treat the ace as an 11 if the hand will not bust
+        if (ace && sum < 12) {
+            sum += 10
+        }
+
+        return sum
+    }
 }
 
 /**
@@ -119,20 +162,20 @@ Player.prototype.canDouble = function() {
  * @return {Array}
  */
 Player.prototype.getActions = function() {
-    var total = Blackjack.Utils.score(this.cards)
+    var total = Util.score(this.cards)
     this.actions = []
 
     if (total < 21) {
-        this.actions.push(HIT)
-        this.actions.push(STAND)
+        this.actions.push(Util.ACTIONS.HIT)
+        this.actions.push(Util.ACTIONS.STAND)
     }
 
     if (this.canDouble.call(this)) {
-        this.actions.push(DOUBLE)
+        this.actions.push(Util.ACTIONS.DOUBLE)
     }
 
     if (this.canSplit.call(this)) {
-        this.actions.push(SPLIT)
+        this.actions.push(Util.ACTIONS.SPLIT)
     }
 
     return this.actions
@@ -140,6 +183,8 @@ Player.prototype.getActions = function() {
 
 /**
  * BlackJackGame
+ * 
+ * @event userleave 유저가 방을 나가는 액션을 할 때 호출. socket disconnect할 땐 반대로 roomManager에서 메소드를 호출한다.
  */
 inherits(BlackJackGame, EventEmitter)
 
