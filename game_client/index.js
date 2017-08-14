@@ -1,76 +1,96 @@
 var SocketIO = require('socket.io-client')
+var Util = require('../game_server/game_util')
 
-function RcbGame() {
+function BlackJackOn() {
     var self = this
-    if (!(self instanceof RcbGame)) return new RcbGame()
+    if (!(self instanceof BlackJackOn)) return new BlackJackOn()
 
-    var buttons = document.getElementsByClassName("bet_button");
-    for (var i = 0; i < buttons.length; i++) {
-        buttons.item(i).addEventListener('change', self.onBetButton.bind(self))
-    }
-    document.getElementById('bet_range').addEventListener('change', self.onBetRange.bind(self))
-
-    self.currentChoice = 'giveup'
-    self.betRange = 10
+    self.currentChoice = Util.PLAYERSTATES.DROP
+        // self.betRange = 10
     self.totalMoney = 0
-    document.getElementById('game_money').innerHTML = self.totalMoney
-    document.getElementById('bet_range_num').innerText = self.betRange
-    var loanButton = document.getElementById('loan_button')
-    loanButton.addEventListener('click', self.onLoanClick.bind(self))
-    loanButton.className += ' hide'
+    self.betOnThisTurn = 0
+    self.room_id = ''
+    self.gameState = Util.GAMESTATES.INIT
 
-    self.socket = SocketIO(window.location.hostname + ":" + window.location.port);
-    self.socket.on('turn update', self.turn_update.bind(self))
+    document.getElementById('bankroll').innerHTML = self.totalMoney
+
+    self.socket = SocketIO(window.location.hostname + ':' + window.location.port)
+    self.socket.on('game packet', self.turn_update.bind(self))
+    self.socket.emit('join', 'hello')
     console.log('init')
 }
-RcbGame.prototype.onBetButton = function(e) {
+BlackJackOn.prototype.turn_update = function(message) {
     var self = this
-    self.currentChoice = e.target.value
-        // console.log('user clicked: ' + e.target.value)
-    self.user_bet()
-}
-RcbGame.prototype.onBetRange = function(e) {
-    var self = this
-    self.betRange = e.target.value
-        // console.log('user clicked: ' + self.betRange)
-    document.getElementById('bet_range_num').innerText = self.betRange
-    self.user_bet()
-}
-RcbGame.prototype.onLoanClick = function(e) {
-    var self = this
-    document.getElementById('loan_button').className += ' hide'
-}
+    console.log('got from server: ' + JSON.stringify(message))
+    self.room_id = message.room_id
 
-RcbGame.prototype.turn_update = function(message) {
-    var self = this
-        // console.log('got from server: '+ message.coin_result + '. You ' + (message.game_result ? 'won!' : 'lose!'))
+    var gs = document.getElementById('gamestate')
+    gs.innerHTML = message.gameState
+    self.gameState = message.gameState
 
-    var prev_coin = document.getElementById('prev-coin')
-    prev_coin.className = prev_coin.className.replace(" hide", "")
-    prev_coin.className = prev_coin.className.replace(" head", "")
-    prev_coin.className = prev_coin.className.replace(" tail", "")
-    prev_coin.className += ' ' + message.coin_result
-    document.getElementById('game_message').innerText = 'You ' + (message.game_result ? 'won!' : 'lose!')
-    setTimeout(function() {
-        prev_coin.className = prev_coin.className.replace(" head", "")
-        prev_coin.className = prev_coin.className.replace(" tail", "")
-        prev_coin.className += ' hide'
-        document.getElementById('game_message').innerText = ''
-    }, 1000);
-
-    document.getElementById('game_money').innerHTML = self.totalMoney
-
-    self.user_bet()
-
-    if (self.totalMoney < 10) {
-        var loanButton = document.getElementById('loan_button')
-        loanButton.className = loanButton.className.replace(" hide", "")
+    if (self.gameState == Util.GAMESTATES.BETTING) {
+        document.getElementById('deal').setAttribute('style', 'display:block;')
+        document.getElementById('actions').setAttribute('style', 'display:none;')
+    } else if (self.gameState == Util.GAMESTATES.HITTING) {
+        document.getElementById('actions').setAttribute('style', 'display:block;')
+        document.getElementById('deal').setAttribute('style', 'display:none;')
     }
+
+    if (!message.broadcast) {
+        document.getElementById('hit').parentElement.setAttribute('style', 'display:none;')
+        document.getElementById('stand').parentElement.setAttribute('style', 'display:none;')
+        document.getElementById('double').parentElement.setAttribute('style', 'display:none;')
+        document.getElementById('split').parentElement.setAttribute('style', 'display:none;')
+        for (var i = 0; i < message.getActions.length; i++) {
+            var action = message.getActions[i]
+            if (action == Util.ACTIONS.HIT) {
+                document.getElementById('hit').parentElement.setAttribute('style', 'display:block;')
+            } else if (action == Util.ACTIONS.STAND) {
+                document.getElementById('stand').parentElement.setAttribute('style', 'display:block;')
+            } else if (action == Util.ACTIONS.DOUBLE) {
+                document.getElementById('double').parentElement.setAttribute('style', 'display:block;')
+            } else if (action == Util.ACTIONS.SPLIT) {
+                document.getElementById('split').parentElement.setAttribute('style', 'display:block;')
+            }
+        }
+
+        document.getElementById('player-total').innerHTML = Util.score(message.targetCards)
+        document.getElementById('dealer-total').innerHTML = Util.score(message.dealerCards)
+        document.getElementById('playerstate').innerHTML = message.targetState
+    }
+    // prev_coin.className = prev_coin.className.replace(' hide', '')
+    // prev_coin.className = prev_coin.className.replace(' head', '')
+    // prev_coin.className = prev_coin.className.replace(' tail', '')
+    // prev_coin.className += ' ' + message.coin_result
+    // document.getElementById('game_message').innerText = 'You ' + (message.game_result ? 'won!' : 'lose!')
+    // setTimeout(function() {
+    //     prev_coin.className = prev_coin.className.replace(' head', '')
+    //     prev_coin.className = prev_coin.className.replace(' tail', '')
+    //     prev_coin.className += ' hide'
+    //     document.getElementById('game_message').innerText = ''
+    // }, 1000)
+
+    // document.getElementById('game_money').innerHTML = self.totalMoney
+
+    // self.user_bet()
+
+    // if (self.totalMoney < 10) {
+    //     var loanButton = document.getElementById('loan_button')
+    //     loanButton.className = loanButton.className.replace(' hide', '')
+    // }
 }
-RcbGame.prototype.user_bet = function() {
+BlackJackOn.prototype.pressAction = function(method) {
     var self = this
     if (!self.socket) return
-    self.socket.emit('user bet', { choice: self.currentChoice, amount: self.totalMoney * (self.betRange * 0.01) })
+        /**
+         * {
+         *  client_id: String 
+         *  room_id: String
+         *  action: String - > Deal, Drop, Hit, Stand, Double, Split, Surrender, Insurance
+         *  bet: Number
+         * }
+         */
+    self.socket.emit('game packet', { client_id: self.socket.id, room_id: self.room_id, action: method, bet: self.betOnThisTurn })
 }
 
-module.exports = RcbGame
+module.exports = BlackJackOn
