@@ -1,4 +1,5 @@
 var Game = require('./blackjackgame')
+var debug = require('debug')('blackjackon:RoomManager')
 var MAX_CLIENT = 7
 
 function RoomManager(socketio) {
@@ -62,7 +63,21 @@ RoomManager.prototype.roomResponse = function(message) {
     if (message.broadcast) {
         self.io.in(message.room_id).emit('game packet', message)
     } else {
-        self.io.in(message.room_id).to(message.client_id).emit('game packet', message)
+        self.io.to(message.client_id).emit('game packet', message)
+    }
+}
+RoomManager.prototype.userDisconnect = function(socket) {
+    var self = this
+    var rooms = self.io.sockets.adapter.rooms
+    debug('Rooms: ' + JSON.stringify(rooms))
+    for (var key in rooms) {
+        if (rooms.hasOwnProperty(key)) {
+            if (self.gameRooms[key]) {
+                if (self.gameRooms[key].players[socket.id]) {
+                    self.gameRooms[key].updateDisconectedUser(socket.id)
+                }
+            }
+        }
     }
 }
 

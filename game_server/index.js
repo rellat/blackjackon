@@ -14,9 +14,7 @@ module.exports = function(server) {
 
         socket.on('disconnect', function() {
             console.log('Client has disconnected: ' + socket.id)
-                // sockets.splice(sockets.findIndex(function(element) {
-                //     return element == socket
-                // }), 1)
+            roomManager.userDisconnect(socket)
         })
     })
 }

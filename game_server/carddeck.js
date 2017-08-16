@@ -48,7 +48,8 @@ function Deck() {
 // 섞는 방법을 더 어렵게 해 볼수도 있겠다.
 Deck.prototype.shuffle = function() {
     var self = this
-    for (var i = self.count - 1; i; i--) {
+    self.count = 4 * 13
+    for (var i = self.count - 1; i > 0; i--) {
         var j = Math.floor((i) * Math.random())
         var temp = self.deck[i]
         if (!self.deck[i]) {

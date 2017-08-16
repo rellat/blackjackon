@@ -35,20 +35,28 @@ function BlackJackGame(options) {
 BlackJackGame.prototype.changeDeck = function() {
     var self = this
     if (++self.deckIndex >= self.decks.length) {
-        self.decks = []
         self.deckIndex = 0
             // Create the decks using the setting
         for (var i = 0; i < self.numOfDecks; i += 1) {
-            var deck = new Deck()
-            deck.shuffle()
-            deck.on('outofcard', self.changeDeck.bind(self))
-            self.decks.push(deck)
+            self.decks[i].shuffle()
         }
+    }
+}
+BlackJackGame.prototype.initDecks = function() {
+    var self = this
+    self.decks = []
+    self.deckIndex = 0
+        // Create the decks using the setting
+    for (var i = 0; i < self.numOfDecks; i += 1) {
+        var deck = new Deck()
+        deck.shuffle()
+        deck.on('outofcard', self.changeDeck.bind(self))
+        self.decks.push(deck)
     }
 }
 BlackJackGame.prototype.initGame = function() {
     var self = this
-    self.changeDeck()
+    self.initDecks()
     self.pushClient({ id: Util.DEALER, is_dealer: true })
     self.ChangeGameState(Util.GAMESTATES.READY)
 
@@ -58,15 +66,25 @@ BlackJackGame.prototype.initGame = function() {
             if (1000 * 1 < (Date.now() - self.prevTick)) {
                 self.ChangeGameState(Util.GAMESTATES.BETTING)
                     // give it a time to set things up
+                for (var key in self.players) {
+                    if (self.players.hasOwnProperty(key)) {
+                        var player = self.players[key]
+                        if (!player.is_dealer) {
+                            self.makeRespnse(player)
+                        }
+                    }
+                }
             }
         } else if (self.gameState == Util.GAMESTATES.BETTING) {
             var isReady = false
             var readyCount = 0
-            if (1000 * 5 < (Date.now() - self.prevTick)) isReady = true
+            var playerCount = 0
+            if (1000 * 10 < (Date.now() - self.prevTick)) isReady = true
                 // 플레이어의 배팅이 끝나기를 기다린다. 제한시간 10초를 주고 제한시간 안어 모든 플레이어가 의사결정을 마치면 속행한다.
             for (var key in self.players) {
                 if (self.players.hasOwnProperty(key)) {
                     var player = self.players[key]
+                    playerCount++
                     if (player.is_dealer) {
                         if (player.state != Util.PLAYERSTATES.DEAL) { player.doAction(Util.ACTIONS.DEAL) }
                         // Dealer always deals
@@ -81,8 +99,19 @@ BlackJackGame.prototype.initGame = function() {
                     }
                 }
             }
-            if (self.players.length == readyCount) isReady = true
-            if (isReady) self.ChangeGameState(Util.GAMESTATES.HITTING)
+            if (playerCount == readyCount) isReady = true
+            if (isReady) {
+                self.ChangeGameState(Util.GAMESTATES.HITTING)
+                for (var key in self.players) {
+                    if (self.players.hasOwnProperty(key)) {
+                        var player = self.players[key]
+                        if (!player.is_dealer && player.state == Util.PLAYERSTATES.DEAL) {
+                            // 배팅을 적용하기
+                            player.moneyOnHand -= player.betOnTurn
+                        }
+                    }
+                }
+            }
         } else if (self.gameState == Util.GAMESTATES.HITTING) {
             var isOver = false
             var overCount = 0
@@ -93,7 +122,7 @@ BlackJackGame.prototype.initGame = function() {
                 if (self.players.hasOwnProperty(key)) {
                     var player = self.players[key]
                     playerCount++
-                    if (player.cards.length == 0) {
+                    if (player.cards.length == 0 && player.state != Util.PLAYERSTATES.DROP) {
                         player.pushCard(self.decks[self.deckIndex].nextCard())
                         player.pushCard(self.decks[self.deckIndex].nextCard())
                         if (!player.is_dealer) { self.makeRespnse(player) }
@@ -109,10 +138,10 @@ BlackJackGame.prototype.initGame = function() {
                         }
                         if (overCount == 0) {
                             if (player.getScore() > 17) {
+                                player.doAction(Util.ACTIONS.STAND)
+                            } else {
                                 player.pushCard(self.decks[self.deckIndex].nextCard())
                                 player.doAction(Util.ACTIONS.HIT)
-                            } else {
-                                player.doAction(Util.ACTIONS.STAND)
                             }
                         }
                     } else {
@@ -130,21 +159,75 @@ BlackJackGame.prototype.initGame = function() {
                 }
             }
             debug('over count: ' + overCount + ' / ' + playerCount)
-                // 모든 플레이어의 선택이 종료되면 Win, Lose, Tie를 판정한다.
+
             if (playerCount == overCount) isOver = true
             if (isOver) {
                 self.ChangeGameState(Util.GAMESTATES.PROCESSING)
+                var dealerScore = 0
+                var dealerBlackjack = false
                 for (var key in self.players) {
                     if (self.players.hasOwnProperty(key)) {
                         var player = self.players[key]
-                        player.emptyCards()
+                        if (player.is_dealer) {
+                            dealerScore = player.getScore()
+                            if (player.state == Util.PLAYERSTATES.BLACKJACK) { dealerBlackjack = true }
+                        } else if (player.state != Util.PLAYERSTATES.DROP) {
+                            // 모든 플레이어의 선택이 종료되면 각 플레이어의 Win, Lose, Tie를 판정한다.
+                            if (player.state == Util.PLAYERSTATES.BLACKJACK) {
+                                if (!dealerBlackjack) {
+                                    // win
+                                    player.state = Util.PLAYERSTATES.WIN
+                                    player.moneyOnHand += player.betOnTurn * 2
+                                } else {
+                                    // Tie
+                                    player.state = Util.PLAYERSTATES.TIE
+                                    player.moneyOnHand += player.betOnTurn
+                                }
+                            } else if (player.state == Util.PLAYERSTATES.BUST) {
+                                if (dealerScore > 21) {
+                                    // Tie
+                                    player.state = Util.PLAYERSTATES.TIE
+                                    player.moneyOnHand += player.betOnTurn
+                                } else {
+                                    // Lose
+                                    player.state = Util.PLAYERSTATES.LOSE
+                                }
+                            } else {
+                                var playerScore = player.getScore()
+                                if (playerScore == dealerScore) { // Tie 
+                                } else if (playerScore > dealerScore) {
+                                    // Win
+                                    player.state = Util.PLAYERSTATES.WIN
+                                    player.moneyOnHand += player.betOnTurn * 2
+                                } else {
+                                    // Lose
+                                    player.state = Util.PLAYERSTATES.LOSE
+                                }
+                            }
+                            self.makeRespnse(player)
+                        }
                     }
                 }
+                // self.players[Util.DEALER].state = Util.PLAYERSTATES.DROP
+                // self.players[Util.DEALER].emptyCards()
             }
         } else if (self.gameState == Util.GAMESTATES.PROCESSING) {
-            if (1000 * 1 < (Date.now() - self.prevTick)) {
+            if (1000 * 2 < (Date.now() - self.prevTick)) {
                 // 다음 판을 기다리는 시간을 준다.
                 self.ChangeGameState(Util.GAMESTATES.BETTING)
+
+                for (var key in self.players) {
+                    if (self.players.hasOwnProperty(key)) {
+                        var player = self.players[key]
+                            // if (!player.is_dealer) {  }
+
+                        // 플레이어 상태를 초기화한다.
+                        player.state = Util.PLAYERSTATES.DROP
+                        player.emptyCards()
+
+                        if (!player.is_dealer) { self.makeRespnse(player) }
+                    }
+                }
             }
         }
     }
@@ -195,7 +278,10 @@ BlackJackGame.prototype.clientEventHandler = function(message) {
             if (message.action == Util.ACTIONS.HIT || message.action == Util.ACTIONS.DOUBLE) {
                 player.pushCard(self.decks[self.deckIndex].nextCard())
                 if (message.action == Util.ACTIONS.DOUBLE) {
-                    if (player.moneyOnHand >= player.betOnTurn * 2) { player.betOnTurn = player.betOnTurn * 2 }
+                    if (player.moneyOnHand >= player.betOnTurn * 2) {
+                        player.moneyOnHand -= player.betOnTurn
+                        player.betOnTurn = player.betOnTurn * 2
+                    }
                 }
             }
             self.makeRespnse(player)
@@ -231,15 +317,19 @@ BlackJackGame.prototype.makeRespnse = function(target) {
         room_id: self.room_id,
         broadcast: broadcast,
         gameState: self.gameState,
-        dealerCards: self.players[Util.DEALER].cards,
+        dealerCards: (self.gameState == Util.GAMESTATES.HITTING) ? [self.players[Util.DEALER].cards[0]] : self.players[Util.DEALER].cards,
         targetCards: target.cards,
         targetState: target.state,
         moneyOnHand: target.moneyOnHand,
-        getActions: (self.gameState == Util.GAMESTATES.HITTING && !target.is_dealer && target.state != Util.PLAYERSTATES.DROP) ? target.getActions() : [],
+        getActions: (self.gameState == Util.GAMESTATES.HITTING && !broadcast && target.state != Util.PLAYERSTATES.DROP) ? target.getActions() : [],
         otherPlayers: otherPlayers
     })
 }
 
-BlackJackGame.prototype.updateDisconectedUser = function(client_id) {}
+BlackJackGame.prototype.updateDisconectedUser = function(client_id) {
+    var self = this
+    if (self.players[client_id]) delete self.players[client_id]
+    debug('client: ' + client_id + ' disconnect from room: ' + self.room_id)
+}
 
 module.exports = BlackJackGame

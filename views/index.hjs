@@ -31,11 +31,11 @@
                     <li><a id="double" href="#" onclick="BlackJackOn.pressAction('Doble');">Double</a><span class="shortcut">d</span></li>
                     <li><a id="split" href="#" onclick="BlackJackOn.pressAction('Split');">Split</a><span class="shortcut">p</span></li>
                 </ul>
-                <!-- <div id="chips">
-                    <div class="chip bet red" data-value="1"><span>100b</span></div>
-                    <div class="chip blue" data-value="5"><span>500b</span></div>
-                    <div class="chip yellow" data-value="10"><span>1k</span></div>
-                </div> -->
+                <div id="chips">
+                    <div class="chip bet red" data-value="1"><span>1</span></div>
+                    <div class="chip blue" data-value="5"><span>5</span></div>
+                    <div class="chip yellow" data-value="10"><span>10</span></div>
+                </div>
             </div>
 
             <div class="total bot">Player cards sum: <span id="player-total"></span></div>
@@ -43,6 +43,7 @@
         </div>
 
         <div id="player-cards"></div>
+        <div id="other-players"></div>
     </div>
 
     <div id="login" style="display:none;">

@@ -15,7 +15,16 @@ module.exports = {
         INSURANCE: 'Insurance' // TODO: 구현 안됨
     },
     GAMESTATES: { INIT: 'init', BETTING: 'bet', HITTING: 'hit', PROCESSING: 'process' },
-    PLAYERSTATES: { DEAL: 'deal', DROP: 'drop', BLACKJACK: 'blackjack', BUST: 'bust', STAND: 'stand' },
+    PLAYERSTATES: {
+        DEAL: 'deal',
+        DROP: 'drop',
+        BLACKJACK: 'blackjack',
+        BUST: 'bust',
+        STAND: 'stand',
+        WIN: 'win',
+        LOSE: 'lose',
+        TIE: 'tie'
+    },
     DEALER: 'Dealer',
     /**
      * Calculates the score total of a blackjack hand.
@@ -32,9 +41,10 @@ module.exports = {
         // A flag to determine whether the hand has an ace
         var ace
 
-        for (var i = 0, value; i < cards.length; i += 1) {
+        for (var i = 0, value; i < cards.length; i++) {
             if (!cards[i]) {
-                throw 'card is null: ' + i
+                // throw 'card is null: ' + i
+                debug('card is null: ' + i)
             }
             if (cards[i].rank === 'J' || cards[i].rank === 'Q' || cards[i].rank === 'K') {
                 value = 10

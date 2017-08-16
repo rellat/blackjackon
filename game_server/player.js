@@ -27,11 +27,11 @@ Player.prototype.pushCard = function(card) {
     var score = self.getScore()
     if (score > 21) {
         self.state = Util.PLAYERSTATES.BUST
-    } else if (score == 21 && self.history.length == 0) {
+    } else if (score == 21 && !self.history.length) {
         self.state = Util.PLAYERSTATES.BLACKJACK
     }
 }
-Player.prototype.emptyCards = function(card) {
+Player.prototype.emptyCards = function() {
     var self = this
     self.cards = []
     self.history = []
@@ -73,9 +73,11 @@ Player.prototype.getActions = function() {
     if (total < 21) {
         this.actions.push(Util.ACTIONS.HIT)
         this.actions.push(Util.ACTIONS.STAND)
+    } else if (total == 21) {
+        this.actions.push(Util.ACTIONS.STAND)
     }
     if (this.canDouble.call(this)) { this.actions.push(Util.ACTIONS.DOUBLE) }
-    if (this.canSplit.call(this)) { this.actions.push(Util.ACTIONS.SPLIT) }
+    // if (this.canSplit.call(this)) { this.actions.push(Util.ACTIONS.SPLIT) }
     return this.actions
 }
 
