@@ -1,0 +1,27 @@
+.buttonContainer {
+    text-align: center;
+    background: #efefef;
+    padding: 20px;
+}
+
+.gameButton {
+    font-size: 30px;
+    background: #f1c40f;
+    color: white;
+    padding: 10px 20px;
+    margin: 0 7px 7px;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    position: relative;
+    border-radius: 5px;
+    box-shadow: 0 7px #f39c12, 0 7px 7px 1px #4f4f4f, 0 0 #e67e22 inset;
+    transition: box-shadow 0.15s, margin 0.15s;
+    top: -200px;
+    /*left: -300px*/
+}
+
+.gameButton:active {
+    margin: 0px 7px 7px;
+    box-shadow: 0 0 #e67e22, 0 0 #e67e22, 0 3px 14px #e67e22 inset;
+}

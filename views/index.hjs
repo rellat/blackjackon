@@ -8,81 +8,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel='stylesheet' href='/stylesheets/chipStyle.css' />
+    <link rel='stylesheet' href='/stylesheets/buttonStyle.css' />
 </head>
 
 <body>
-    <div id="game">
-        <h1>{{ title }}</h1>
-        <div id="dealer-cards"></div>
-        <div>Game State: <span id="gamestate"></span></div>
-
-        <div id="ui">
-
-            <div class="total">Dealer cards sum: <span id="dealer-total"></span></div>
-
-            <div class="zone">
-                <!-- <span class="label">Your Bytes</span> -->
-                <span class="label right">Your Bet</span>
-                <div id="bankroll">10k</div>
-                <div id="deal"><a href="#" onclick="BlackJackOn.pressAction('Deal');">Deal</a><span class="shortcut">spacebar</span></div>
-                <ul id="actions">
-                    <li><a id="hit" href="#" onclick="BlackJackOn.pressAction('Hit');">Hit</a><span class="shortcut">spacebar</span></li>
-                    <li><a id="stand" href="#" onclick="BlackJackOn.pressAction('Stand');">Stand</a><span class="shortcut">s</span></li>
-                    <li><a id="double" href="#" onclick="BlackJackOn.pressAction('Doble');">Double</a><span class="shortcut">d</span></li>
-                    <li><a id="split" href="#" onclick="BlackJackOn.pressAction('Split');">Split</a><span class="shortcut">p</span></li>
-                </ul>
-                <div id="chips">
-                    <div class="chip bet red" data-value="1"><span>1</span></div>
-                    <div class="chip blue" data-value="5"><span>5</span></div>
-                    <div class="chip yellow" data-value="10"><span>10</span></div>
-                </div>
-            </div>
-
-            <div class="total bot">Player cards sum: <span id="player-total"></span></div>
-            <div>Player State: <span id="playerstate"></span></div>
-        </div>
-
-        <div id="player-cards"></div>
-        <div id="other-players"></div>
-    </div>
-
-    <div id="login" style="display:none;">
-        <form action="/login" method="post">
-            <div>
-                <label>Username:</label>
-                <input type="text" name="username" />
-            </div>
-            <div>
-                <label>Password:</label>
-                <input type="password" name="password" />
-            </div>
-            <div>
-                <input type="submit" value="Login" />
-            </div>
-        </form>
-    </div>
-    <div id="signup" style="display:none;">
-        <form action="/signup" method="post">
-            <div>
-                <label>Username:</label>
-                <input type="text" name="username" />
-            </div>
-            <div>
-                <label>nickname:</label>
-                <input type="text" name="nickname" />
-            </div>
-            <div>
-                <label>Password:</label>
-                <input type="password" name="password" />
-            </div>
-            <div>
-                <input type="submit" value="Signup" />
-            </div>
-        </form>
-    </div>
 </body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.1/pixi.min.js"></script>
 
 <script language="javascript" type="text/javascript" src="javascripts/bjo.js"></script>
+
 <script>
     window.BlackJackOn = BlackJackOn()
 </script>

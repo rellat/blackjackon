@@ -1,0 +1,47 @@
+.pokerchip{
+    margin:.5em;
+    font-size:1.2em;
+    position:relative;
+    display:inline-block;
+    -webkit-box-sizing:border-box;
+    -moz-box-sizing:border-box;
+    box-sizing:border-box;
+    width:4em;
+    height:4em;
+    background:#555;
+    border-radius:50%;
+    border:.4em dashed white;
+    transition:all .5s ease;
+    backface-visibility:hidden;
+    box-shadow: 5px 5px 5px #888888;
+    top: -320px;
+    left: 350px;
+}
+.pokerchip div{
+    color:white;
+    position: relative;
+    font-size: 30px;
+    top:25%;
+    /*left: 27%;*/
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
+    cursor: pointer;
+
+}
+.pokerchip.red{
+    background:#DD4631;
+}
+.pokerchip.blue{
+    background:#317DDD;
+}
+.pokerchip:hover{
+    transform:rotate(15deg);
+}
+
+.chipContainer {
+    text-align: center;
+    background: #efefef;
+    padding: 20px;
+}

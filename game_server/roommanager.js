@@ -1,6 +1,6 @@
 var Game = require('./blackjackgame')
 var debug = require('debug')('blackjackon:RoomManager')
-var MAX_CLIENT = 7
+var MAX_CLIENT = 4
 
 function RoomManager(socketio) {
     var self = this
@@ -21,6 +21,7 @@ RoomManager.prototype.requestGameRoom = function(socket) {
             var gameroom = self.gameRooms[key]
 
             if (gameroom.players.length > MAX_CLIENT) continue
+
 
             socket.join(key)
             gameroom.pushClient({ id: socket.id, money_on_hand: 100 })
