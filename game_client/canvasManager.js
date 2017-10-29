@@ -2,6 +2,7 @@
 var mustache = require('mustache')
 var template = require('./template')
 var Util = require('./../game_server/game_util')
+var _ = require('underscore')
 
 var EventEmitter = require('events').EventEmitter
 var inherits = require('inherits')
@@ -31,7 +32,7 @@ function CanvasManager () {
   self.dealerCardContainer = null
   self.dealerValueSumText = null
 
-  self.otherCardContainer = []
+  self.otherCardContainer = {}
   self.otherValueSumTexts = []
 
   self.game = null
@@ -147,7 +148,7 @@ CanvasManager.prototype.addViewInBar = function (graphic, set) {
   graphic.drawRoundedRect(set.frame.x, set.frame.y, 200, 80, 15)
   graphic.endFill()
 
-  var text = new PIXI.Text(set.inner + 0, {
+  var text = new PIXI.Text(set.inner, {
     font: '30px Snippet',
     fill: 'white',
     align: 'center'
@@ -220,32 +221,6 @@ CanvasManager.prototype.createCardContainer = function (x, y) {
   return {
     container: container,
     text: text
-  }
-}
-
-CanvasManager.prototype.initCardArea = function (otherPlayers) {
-  var self = this
-
-  var set = self.createCardContainer(480, 400)
-  self.myCardContainer = set.container
-  self.myValueSumText = set.text
-  self.stage.addChild(self.myCardContainer)
-
-  var set = self.createCardContainer(480, 200)
-  self.dealerCardContainer = set.container
-  self.dealerValueSumText = set.text
-  self.stage.addChild(self.dealerCardContainer)
-
-  if (!otherPlayers.length) return
-
-  for (var i = 0, len = otherPlayers.length; i < len; i++) {
-    var xy = Util.otherCardContainerXY[i]
-
-    var set = self.createCardContainer(xy[0], xy[1])
-
-    self.stage.addChild(set.container)
-    otherValueSumTexts[otherPlayers[i].client_id] = set.text
-    self.otherCardContainer[otherPlayers[i].client_id] = set.container
   }
 }
 
@@ -328,22 +303,79 @@ CanvasManager.prototype.rerender = function (gameData) {
     case Util.GAMESTATES.BETTING:
       self.changeButtonAndChips()
       self.clearBettingView()
+
       break
     case Util.GAMESTATES.HITTING:
-      self.changeButtonAndChips()
-      if (!self.myCardContainer) self.initCardArea(self.game.otherPlayers)
+      if (self.game.responseType === Util.RESPONSE_TYPE.STATECHANGE) {
+        self.changeButtonAndChips()
+        self.initCardArea()
+        self.initOtherCardArea(self.game.otherPlayers)
+      }
       self.applyGameData()
       break
     case Util.GAMESTATES.PROCESSING:
-      self.changeButtonAndChips()
-      self.applyGameData()
-      self.updateBetMoney(self.betMoney = 0)
-      self.updateBalMoney(self.moneyOnHand = self.game.moneyOnHand)
+      if (self.game.responseType === Util.RESPONSE_TYPE.STATECHANGE) {
+        self.changeButtonAndChips()
+      } else {
+        self.applyGameData()
+        self.updateBetMoney(self.betMoney = 0)
+        self.updateBalMoney(self.moneyOnHand = self.game.moneyOnHand)
+      }
       break
   }
-
   self.renderer.render(self.stage)
 }
+
+CanvasManager.prototype.initCardArea = function () {
+  var self = this
+
+  var set = self.createCardContainer(480, 400)
+  self.myCardContainer = set.container
+  self.myValueSumText = set.text
+  self.stage.addChild(self.myCardContainer)
+
+  var set = self.createCardContainer(480, 200)
+  self.dealerCardContainer = set.container
+  self.dealerValueSumText = set.text
+  self.stage.addChild(self.dealerCardContainer)
+}
+
+CanvasManager.prototype.initOtherCardArea = function (otherPlayers) {
+  var self = this
+
+  for (var i = 0, len = otherPlayers.length; i < len; i++) {
+    var xy = Util.otherCardContainerXY[i]
+
+    var set = self.createCardContainer(xy[0], xy[1])
+
+    self.stage.addChild(set.container)
+    self.otherValueSumTexts[otherPlayers[i].client_id] = set.text
+    self.otherCardContainer[otherPlayers[i].client_id] = set.container
+  }
+}
+
+// 상황에 따라 card 그리고 value sum 그리기
+CanvasManager.prototype.applyGameData = function () {
+  var self = this
+
+  // dealer
+  self.rebuildContainer(self.dealerCardContainer.children[1], self.game.dealerCards)
+  if (self.game.dealerTotal) self.dealerValueSumText.text = self.game.dealerTotal
+
+  if (self.game.client_id === 'Dealer') return
+
+  // my
+  self.rebuildContainer(self.myCardContainer.children[1], self.game.targetCards)
+  self.myValueSumText.text = self.game.playerTotal
+
+  //others
+  for (var j = 0, otherLen = self.game.otherPlayers.length; j < otherLen; j++) {
+    var other = self.game.otherPlayers[j]
+    self.rebuildContainer(self.otherCardContainer[other.client_id].children[1], other.cards)
+    self.otherValueSumTexts[other.client_id].text = other.total
+  }
+}
+
 CanvasManager.prototype.clearBettingView = function () {
   var self = this
 
@@ -356,14 +388,13 @@ CanvasManager.prototype.clearBettingView = function () {
     self.dealerCardContainer = null
   }
 
-  if (!self.otherCardContainer.length) {
-    var cnt = self.otherCardContainer.length
-    while (cnt) {
-      self.otherCardContainer[cnt - 1].parent.removeChild(self.otherCardContainer[cnt - 1])
-      cnt--
-    }
-    self.otherCardContainer = []
+  var others = _.values(self.otherCardContainer)
+
+  for(var i = 0, len = others.length; i < len; i++){
+    others[i].parent.removeChild(others[i])
   }
+
+  self.otherCardContainer = {}
 }
 
 CanvasManager.prototype.rebuildContainer = function (container, cards) {
@@ -376,27 +407,6 @@ CanvasManager.prototype.rebuildContainer = function (container, cards) {
   // card value에 맞는 sprite 넣어준다
   for (var i = 0, len = cards.length; i < len; i++) {
     self.addCard(cards[i], container)
-  }
-}
-
-// 상황에 따라 card 그리고 value sum 그리기
-CanvasManager.prototype.applyGameData = function () {
-  var self = this
-
-  // my
-  self.rebuildContainer(self.myCardContainer.children[1],self.game.targetCards)
-  self.myValueSumText.text = self.game.playerTotal
-
-  // dealer
-  self.rebuildContainer(self.dealerCardContainer.children[1],self.game.dealerCards)
-  if (self.game.dealerTotal) self.dealerValueSumText.text = self.game.dealerTotal
-
-  //others
-  for (var j = 0, otherLen = self.game.otherPlayers.length; j < otherLen; j++) {
-    var other = self.game.otherPlayers[j]
-
-    self.rebuildContainer(self.otherCardContainer[other.client_id].children[1],other.cards)
-    self.otherValueSumTexts[other.client_id].text = other.total
   }
 }
 
@@ -431,7 +441,6 @@ CanvasManager.prototype.onButtonClicked = function (method) {
     method: method,
     betMoney: (method === 'Deal') ? self.betMoney : 0
   })
-
 }
 
 CanvasManager.prototype.onChipClicked = function (amount) {

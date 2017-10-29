@@ -20,7 +20,6 @@ function BlackJackOn () {
 
   self.canvas = new Canvas()
 
-
   self.canvas.on('pressAction', function (data) {
     if (data.method === 'Deal') self.betOnThisTurn = data.betMoney
     if (!self.socket) return
@@ -62,15 +61,14 @@ BlackJackOn.prototype.turn_update = function (message) {
       message.playerTotal = 0
       break
     case Util.GAMESTATES.HITTING:
+
       break
     case Util.GAMESTATES.PROCESSING: // 딜러 카드 까고 연산해서 승패 계산함
       message.dealerTotal = Util.score(message.dealerCards)
       break
   }
 
-  if (!message.broadcast) {
-    message.playerTotal = Util.score(message.targetCards)
-  }
+  message.playerTotal = Util.score(message.targetCards)
 
   // draw other users
   /*

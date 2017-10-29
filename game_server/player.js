@@ -25,6 +25,8 @@ Player.prototype.getCards = function () {
 Player.prototype.pushCard = function (card) {
   var self = this
   self.cards.push(card)
+
+  // 이건 바깥으로 빼는게 어떨까? push 라는 메소드가 이런 체크까지 하는 것을 알 수 없다
   var score = self.getScore()
   if (score > 21) {
     self.state = Util.PLAYERSTATES.BUST

@@ -22,6 +22,10 @@ module.exports = {
     LOSE: 'lose',
     TIE: 'tie'
   },
+  RESPONSE_TYPE: {
+    STATECHANGE: 'statechange',
+    PROCESSINGDONE: 'processingDone'
+  },
   DEALER: 'Dealer',
   /**
    * Calculates the score total of a blackjack hand.
@@ -80,12 +84,12 @@ module.exports = {
   betMoneyView: {
     frame: {x: 10, y: 10},
     text: {x: 110, y: 50},
-    inner: 'BET : $'
+    inner: 'BET : $0'
   },
   balMoneyView: {
     frame: {x: 790, y: 10},
     text: {x: 890, y: 50},
-    inner: 'BAL : $'
+    inner: 'BAL : $0'
   },
   playerStateView: {
     frame: {x: 410, y: 10},
