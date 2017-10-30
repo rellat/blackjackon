@@ -72,7 +72,7 @@ BlackJackGame.prototype.initGame = function () {
   // 일정 시간마다 돌아갈 것 이다
   function gameLoop () {
     var self = this
-    
+
     // 만약 플레이어가 1명이고, 계속 사람이 추가된다면 이건 의미가 없을 수 있다
     // 그런데 플레이어가 4명일 때 시작한다면 의미가 있을 수 있다
     // 그런데 블랙잭 게임의 특성상 플레이어가 다 와야 시작하는 것이 아니라서 이건 의미가 없을 것 같다

@@ -511,6 +511,7 @@ function CanvasManager () {
   self.chipContainer = null
 
   self.cardTextures = []
+  self.cardBackTexture = null
 
   // 다 제거하고 생성하지 않고 있는 객체의 속성 값을 바꿔주는 방식으로 rerendering 할 것 이다
   self.betMoneyText = null
@@ -565,6 +566,11 @@ CanvasManager.prototype.onAssetsLoaded = function () {
   for (var i = 1; i <= 52; i++) {
     self.cardTextures.push(PIXI.Texture.fromFrame('card' + i + '.png'))
   }
+
+  var img = new Image()
+  img.src = './../image/cardback.png'
+  var base = new PIXI.BaseTexture(img)
+  self.cardBackTexture = new PIXI.Texture(base)
 }
 
 CanvasManager.prototype.initButtonAndChips = function () {
@@ -579,7 +585,7 @@ CanvasManager.prototype.initButtonAndChips = function () {
   var buttons = document.getElementsByClassName('gameButton')
   for (var i = 0, len = buttons.length; i < len; i++) {
     buttons[i].addEventListener('click', function (e) {
-      console.log(e.target.id)
+      //console.log(e.target.id)
       self.onButtonClicked(e.target.id)
     })
   }
@@ -641,7 +647,7 @@ CanvasManager.prototype.addViewInBar = function (graphic, set) {
   graphic.drawRoundedRect(set.frame.x, set.frame.y, 200, 80, 15)
   graphic.endFill()
 
-  var text = new PIXI.Text(set.inner + 0, {
+  var text = new PIXI.Text(set.inner, {
     font: '30px Snippet',
     fill: 'white',
     align: 'center'
@@ -725,7 +731,20 @@ CanvasManager.prototype.createCardContainer = function (x, y) {
 CanvasManager.prototype.addCard = function (card, container) {
   var self = this
 
-  if (!card) return
+  if (!card){
+    var childLen = container.children.length + 1
+
+    var sprite = PIXI.Sprite.from(self.cardBackTexture)
+    sprite.anchor.set(0.5)
+    sprite.x = 30 * childLen
+    sprite.y = 0
+    sprite.scale.set(0.8)
+
+    // 으허 container에 anchor가 안먹어서 내가 직접 밀어줘야하다니....
+    container.parent.x -= 4
+    container.addChild(sprite)
+    return
+  }
   var suit = card.suit
   var value = card.rank - 1
   var index = suit * 13 + value
@@ -883,7 +902,7 @@ CanvasManager.prototype.clearBettingView = function () {
 
   var others = _.values(self.otherCardContainer)
 
-  for(var i = 0, len = others.length; i < len; i++){
+  for (var i = 0, len = others.length; i < len; i++) {
     others[i].parent.removeChild(others[i])
   }
 
@@ -1144,12 +1163,12 @@ module.exports = {
   betMoneyView: {
     frame: {x: 10, y: 10},
     text: {x: 110, y: 50},
-    inner: 'BET : $'
+    inner: 'BET : $0'
   },
   balMoneyView: {
     frame: {x: 790, y: 10},
     text: {x: 890, y: 50},
-    inner: 'BAL : $'
+    inner: 'BAL : $0'
   },
   playerStateView: {
     frame: {x: 410, y: 10},
